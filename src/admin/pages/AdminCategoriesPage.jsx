@@ -1,12 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, FolderTree, ArrowRight, X, Check, Image as ImageIcon } from 'lucide-react';
 import { CATEGORIES } from '../../data/products';
 
+// Helper to sanitize and format URL-friendly slugs
+const sanitizeSlug = (raw, fallback) => {
+  let val = (raw || fallback || '').trim().toLowerCase();
+  // Strip protocol and domain if user pasted a full URL
+  if (val.startsWith('http://') || val.startsWith('https://')) {
+    try {
+      const parsed = new URL(val);
+      val = parsed.pathname.split('/').filter(Boolean).pop() || 'category';
+    } catch {
+      val = 'category';
+    }
+  }
+  // Remove special characters, query parameters, keep alphanumeric and dashes
+  val = val.split('?')[0].replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return val.substring(0, 40) || `cat-${Date.now().toString().slice(-4)}`;
+};
+
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState(CATEGORIES.map(c => ({
-    ...c,
-    status: "Active"
-  })));
+  const [categories, setCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mw_admin_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(c => ({
+            ...c,
+            slug: sanitizeSlug(c.slug, c.name),
+            status: c.status || "Active"
+          }));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return CATEGORIES.map(c => ({
+      ...c,
+      slug: sanitizeSlug(c.slug, c.name),
+      status: "Active"
+    }));
+  });
+
+  // Persist to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('mw_admin_categories', JSON.stringify(categories));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [categories]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -46,25 +90,27 @@ export default function AdminCategoriesPage() {
     e.preventDefault();
     const subs = formData.subcategoriesText
       .split(',')
-      .map(s => ({ name: s.trim(), slug: s.trim().toLowerCase().replace(/\s+/g, '-') }))
+      .map(s => ({ name: s.trim(), slug: sanitizeSlug(s.trim(), s.trim()) }))
       .filter(s => s.name.length > 0);
+
+    const cleanSlug = sanitizeSlug(formData.slug, formData.name);
 
     if (editingCategory) {
       setCategories(prev => prev.map(c => c.id === editingCategory.id ? {
         ...c,
         name: formData.name,
-        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
+        slug: cleanSlug,
         tagline: formData.tagline,
-        image: formData.image,
+        image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
         subcategories: subs
       } : c));
     } else {
       const newCat = {
-        id: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
-        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
+        id: cleanSlug || `cat-${Date.now()}`,
+        slug: cleanSlug,
         name: formData.name,
         tagline: formData.tagline,
-        image: formData.image,
+        image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
         itemCount: 0,
         subcategories: subs,
         status: "Active"
@@ -119,12 +165,21 @@ export default function AdminCategoriesPage() {
           >
             {/* Image Preview & Status Badge */}
             <div className="relative aspect-16/9 bg-[#F8F6F2] overflow-hidden">
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute top-3 right-3">
+              <img 
+                src={cat.image} 
+                alt={cat.name} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80";
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              {/* Top Action Badges */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
                 <button
                   onClick={() => toggleStatus(cat.id)}
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-xs cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs cursor-pointer ${
                     cat.status === "Active" 
                       ? 'bg-[#4E7A58] text-white' 
                       : 'bg-[#77736D] text-white'
@@ -132,12 +187,27 @@ export default function AdminCategoriesPage() {
                 >
                   {cat.status}
                 </button>
+                <button
+                  onClick={() => handleOpenEdit(cat)}
+                  className="p-1.5 bg-black/60 hover:bg-[#5B3826] text-white backdrop-blur-xs rounded-lg transition-colors cursor-pointer"
+                  title="Edit Category"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(cat.id)}
+                  className="p-1.5 bg-black/60 hover:bg-[#B8433E] text-white backdrop-blur-xs rounded-lg transition-colors cursor-pointer"
+                  title="Delete Category"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="absolute bottom-3 left-3 text-white">
+
+              <div className="absolute bottom-3 left-3 right-3 text-white">
                 <span className="text-[10px] uppercase tracking-wider text-[#E9DDCD] font-bold">
                   {cat.itemCount || 0}+ Products
                 </span>
-                <h3 className="font-serif text-lg font-bold text-white leading-tight">
+                <h3 className="font-serif text-lg font-bold text-white leading-tight truncate">
                   {cat.name}
                 </h3>
               </div>
@@ -156,32 +226,43 @@ export default function AdminCategoriesPage() {
                     Subcategories ({cat.subcategories?.length || 0})
                   </span>
                   <div className="flex flex-wrap gap-1">
-                    {cat.subcategories?.map((sub, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-[#F8F6F2] border border-[#E9DDCD] text-[#292724] text-[10px] font-medium rounded-md">
-                        {sub.name}
-                      </span>
-                    ))}
+                    {cat.subcategories && cat.subcategories.length > 0 ? (
+                      cat.subcategories.map((sub, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-[#F8F6F2] border border-[#E9DDCD] text-[#292724] text-[10px] font-medium rounded-md">
+                          {sub.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-[#77736D] italic">No subcategories defined</span>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Action buttons footer */}
-              <div className="mt-5 pt-3 border-t border-[#F8F6F2] flex items-center justify-between text-xs">
-                <span className="font-mono text-[11px] text-[#77736D]">/{cat.slug}</span>
-                <div className="flex items-center gap-2">
+              {/* Action buttons footer: guaranteed visible and shrink-resistant */}
+              <div className="mt-5 pt-3 border-t border-[#F8F6F2] flex items-center justify-between gap-2 text-xs min-w-0">
+                <span 
+                  className="font-mono text-[11px] text-[#77736D] truncate max-w-[140px] sm:max-w-[180px] shrink block"
+                  title={`/${cat.slug}`}
+                >
+                  /{cat.slug}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleOpenEdit(cat)}
-                    className="p-1.5 text-[#5B3826] hover:bg-[#E9DDCD]/40 rounded-lg transition-colors"
+                    className="px-2.5 py-1.5 bg-[#FAF7F2] hover:bg-[#E9DDCD] text-[#5B3826] border border-[#E9DDCD] rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
                     title="Edit Category"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDelete(cat.id)}
-                    className="p-1.5 text-[#B8433E] hover:bg-[#B8433E]/10 rounded-lg transition-colors"
+                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-[#B8433E] border border-red-200 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
                     title="Delete Category"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
@@ -201,7 +282,7 @@ export default function AdminCategoriesPage() {
               <h3 className="font-serif text-lg font-bold text-[#292724]">
                 {editingCategory ? "Edit Category Details" : "Create New Furniture Category"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 text-[#77736D] hover:text-[#292724]">
+              <button onClick={() => setIsModalOpen(false)} className="p-1 text-[#77736D] hover:text-[#292724] cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -215,18 +296,18 @@ export default function AdminCategoriesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Balcony & Garden Furniture"
-                  className="w-full px-3 py-2 border rounded-xl"
+                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">URL Slug</label>
+                <label className="block font-semibold mb-1">URL Slug (e.g. balcony-furniture)</label>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   placeholder="e.g. balcony-furniture"
-                  className="w-full px-3 py-2 border rounded-xl font-mono"
+                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl font-mono focus:outline-none focus:border-[#5B3826]"
                 />
               </div>
 
@@ -237,7 +318,7 @@ export default function AdminCategoriesPage() {
                   value={formData.tagline}
                   onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
                   placeholder="e.g. Weather-resistant solid teak loungers and planters"
-                  className="w-full px-3 py-2 border rounded-xl"
+                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
                 />
               </div>
 
@@ -247,8 +328,8 @@ export default function AdminCategoriesPage() {
                   type="url"
                   value={formData.image}
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border rounded-xl"
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
                 />
               </div>
 
@@ -259,7 +340,7 @@ export default function AdminCategoriesPage() {
                   value={formData.subcategoriesText}
                   onChange={(e) => setFormData({ ...formData, subcategoriesText: e.target.value })}
                   placeholder="Loungers, Outdoor Benches, Garden Planters"
-                  className="w-full px-3 py-2 border rounded-xl"
+                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
                 />
               </div>
 
@@ -267,13 +348,13 @@ export default function AdminCategoriesPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border rounded-xl"
+                  className="px-4 py-2 border border-[#E9DDCD] hover:bg-[#F8F6F2] rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#5B3826] text-white rounded-xl font-semibold flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Check className="w-4 h-4" />
                   <span>Save Category</span>
