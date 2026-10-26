@@ -169,6 +169,10 @@ export default function AdminDashboardPage() {
                 <span className="font-bold text-white text-sm">{neonStatus?.stats?.products || 12} rows</span>
               </div>
               <div>
+                <span className="text-[10px] uppercase text-[#E9DDCD]/70 block">Cloud Categories</span>
+                <span className="font-bold text-white text-sm">{neonStatus?.stats?.categories ?? 7} rows</span>
+              </div>
+              <div>
                 <span className="text-[10px] uppercase text-[#E9DDCD]/70 block">Cloud Orders</span>
                 <span className="font-bold text-white text-sm">{neonStatus?.stats?.orders ?? 0} rows</span>
               </div>

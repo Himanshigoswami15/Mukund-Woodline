@@ -43,6 +43,7 @@ export async function checkNeonConnection() {
         current_database() as database_name,
         version() as pg_version,
         (SELECT COUNT(*)::int FROM products) as products_count,
+        (SELECT COUNT(*)::int FROM categories) as categories_count,
         (SELECT COUNT(*)::int FROM orders) as orders_count,
         (SELECT COUNT(*)::int FROM inquiries) as inquiries_count
     `;
@@ -57,6 +58,7 @@ export async function checkNeonConnection() {
       version: rows[0]?.pg_version,
       stats: {
         products: rows[0]?.products_count ?? 0,
+        categories: rows[0]?.categories_count ?? 0,
         orders: rows[0]?.orders_count ?? 0,
         inquiries: rows[0]?.inquiries_count ?? 0,
       }
@@ -228,5 +230,89 @@ export async function fetchInquiriesFromNeon() {
   } catch (err) {
     console.error('[Neon] Failed to fetch inquiries from Postgres:', err);
     return [];
+  }
+}
+
+/**
+ * Fetch all categories permanently stored in Neon Postgres
+ */
+export async function fetchCategoriesFromNeon() {
+  const sql = getNeonSql();
+  if (!sql) return null;
+
+  try {
+    const rows = await sql`SELECT * FROM categories ORDER BY created_at ASC`;
+    return rows.map(r => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      shortName: r.short_name || r.name,
+      tagline: r.tagline || '',
+      image: r.image || '',
+      itemCount: Number(r.item_count || 0),
+      subcategories: typeof r.subcategories === 'string' ? JSON.parse(r.subcategories) : (r.subcategories || []),
+      status: r.status || 'Active',
+      createdAt: r.created_at
+    }));
+  } catch (err) {
+    console.error('[Neon] Failed to fetch categories from Postgres:', err);
+    return null;
+  }
+}
+
+/**
+ * Save or update a category permanently in Neon Postgres
+ */
+export async function saveCategoryToNeon(cat) {
+  const sql = getNeonSql();
+  if (!sql) return false;
+
+  try {
+    await sql`
+      INSERT INTO categories (
+        id, slug, name, short_name, tagline, image, item_count, subcategories, status
+      ) VALUES (
+        ${cat.id},
+        ${cat.slug},
+        ${cat.name},
+        ${cat.shortName || cat.name},
+        ${cat.tagline || ''},
+        ${cat.image || ''},
+        ${Number(cat.itemCount || 0)},
+        ${JSON.stringify(cat.subcategories || [])},
+        ${cat.status || 'Active'}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        slug = EXCLUDED.slug,
+        short_name = EXCLUDED.short_name,
+        tagline = EXCLUDED.tagline,
+        image = EXCLUDED.image,
+        item_count = EXCLUDED.item_count,
+        subcategories = EXCLUDED.subcategories,
+        status = EXCLUDED.status;
+    `;
+    console.log(`[Neon] Permanently saved category "${cat.name}" in Postgres!`);
+    return true;
+  } catch (err) {
+    console.error(`[Neon] Failed to save category ${cat.id}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Delete a category permanently from Neon Postgres
+ */
+export async function deleteCategoryFromNeon(id) {
+  const sql = getNeonSql();
+  if (!sql) return false;
+
+  try {
+    await sql`DELETE FROM categories WHERE id = ${id}`;
+    console.log(`[Neon] Permanently deleted category "${id}" from Postgres!`);
+    return true;
+  } catch (err) {
+    console.error(`[Neon] Failed to delete category ${id}:`, err);
+    return false;
   }
 }

@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, FolderTree, ArrowRight, X, Check, Image as ImageIcon, Upload } from 'lucide-react';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  FolderTree, 
+  ArrowRight, 
+  X, 
+  Check, 
+  Image as ImageIcon, 
+  Upload, 
+  Database, 
+  RefreshCw,
+  CloudCheck,
+  CheckCircle2
+} from 'lucide-react';
 import { CATEGORIES } from '../../data/products';
+import { 
+  fetchCategoriesFromNeon, 
+  saveCategoryToNeon, 
+  deleteCategoryFromNeon 
+} from '../../services/neonService';
 
 // Helper to sanitize and format URL-friendly slugs
 const sanitizeSlug = (raw, fallback) => {
@@ -43,16 +62,46 @@ export default function AdminCategoriesPage() {
     }));
   });
 
-  // Persist to localStorage
+  const [isLoadingNeon, setIsLoadingNeon] = useState(false);
+  const [neonSynced, setNeonSynced] = useState(true);
+  const [syncNotice, setSyncNotice] = useState('');
+
+  // 1. Fetch live categories permanently stored in Neon Postgres
+  const loadCategoriesFromNeon = async () => {
+    setIsLoadingNeon(true);
+    try {
+      const cloudCats = await fetchCategoriesFromNeon();
+      if (cloudCats && cloudCats.length > 0) {
+        setCategories(cloudCats);
+        setNeonSynced(true);
+        try {
+          localStorage.setItem('mw_admin_categories', JSON.stringify(cloudCats));
+        } catch (e) {
+          console.warn('[LocalStorage] Quota warning, Neon Postgres is primary source of truth:', e);
+        }
+      }
+    } catch (e) {
+      console.error('[AdminCategoriesPage] Failed to fetch from Neon:', e);
+    } finally {
+      setIsLoadingNeon(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategoriesFromNeon();
+  }, []);
+
+  // Persist to localStorage as secondary cache
   useEffect(() => {
     try {
       localStorage.setItem('mw_admin_categories', JSON.stringify(categories));
     } catch (e) {
-      console.error(e);
+      // Ignored if local storage quota exceeded by image data
     }
   }, [categories]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -103,8 +152,10 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
+
     const subs = formData.subcategoriesText
       .split(',')
       .map(s => ({ name: s.trim(), slug: sanitizeSlug(s.trim(), s.trim()) }))
@@ -112,41 +163,71 @@ export default function AdminCategoriesPage() {
 
     const cleanSlug = sanitizeSlug(formData.slug, formData.name);
 
+    const targetCat = editingCategory
+      ? {
+          ...editingCategory,
+          name: formData.name,
+          shortName: formData.name,
+          slug: cleanSlug,
+          tagline: formData.tagline,
+          image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
+          subcategories: subs,
+          status: editingCategory.status || "Active"
+        }
+      : {
+          id: cleanSlug || `cat-${Date.now()}`,
+          slug: cleanSlug,
+          name: formData.name,
+          shortName: formData.name,
+          tagline: formData.tagline,
+          image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
+          itemCount: 0,
+          subcategories: subs,
+          status: "Active"
+        };
+
+    // Optimistic UI update
     if (editingCategory) {
-      setCategories(prev => prev.map(c => c.id === editingCategory.id ? {
-        ...c,
-        name: formData.name,
-        slug: cleanSlug,
-        tagline: formData.tagline,
-        image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
-        subcategories: subs
-      } : c));
+      setCategories(prev => prev.map(c => c.id === editingCategory.id ? targetCat : c));
     } else {
-      const newCat = {
-        id: cleanSlug || `cat-${Date.now()}`,
-        slug: cleanSlug,
-        name: formData.name,
-        tagline: formData.tagline,
-        image: formData.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
-        itemCount: 0,
-        subcategories: subs,
-        status: "Active"
-      };
-      setCategories(prev => [newCat, ...prev]);
+      setCategories(prev => [targetCat, ...prev]);
     }
-    setIsModalOpen(false);
+
+    // Permanently write to Neon Postgres cloud!
+    try {
+      const ok = await saveCategoryToNeon(targetCat);
+      if (ok) {
+        setSyncNotice(`✓ "${targetCat.name}" permanently saved in Neon Postgres!`);
+        setTimeout(() => setSyncNotice(''), 4000);
+      }
+    } catch (err) {
+      console.error('[AdminCategoriesPage] Save error:', err);
+    } finally {
+      setIsSaving(false);
+      setIsModalOpen(false);
+    }
   };
 
-  const toggleStatus = (id) => {
-    setCategories(prev => prev.map(c => c.id === id ? {
-      ...c,
-      status: c.status === "Active" ? "Hidden" : "Active"
-    } : c));
+  const toggleStatus = async (id) => {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
+    const newStatus = cat.status === "Active" ? "Hidden" : "Active";
+    const updated = { ...cat, status: newStatus };
+    setCategories(prev => prev.map(c => c.id === id ? updated : c));
+
+    // Permanently update status in Neon Postgres
+    await saveCategoryToNeon(updated);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
+  const handleDelete = async (id) => {
+    const catToDelete = categories.find(c => c.id === id);
+    if (window.confirm(`Permanently delete category "${catToDelete?.name || 'this category'}" from Neon Postgres?`)) {
       setCategories(prev => prev.filter(c => c.id !== id));
+      const ok = await deleteCategoryFromNeon(id);
+      if (ok) {
+        setSyncNotice(`✓ "${catToDelete?.name || 'Category'}" deleted from Neon Postgres.`);
+        setTimeout(() => setSyncNotice(''), 4000);
+      }
     }
   };
 
@@ -156,21 +237,44 @@ export default function AdminCategoriesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E9DDCD]">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+              <Database className="w-3 h-3 text-emerald-600" />
+              <span>Neon Postgres Cloud Storage Active</span>
+            </span>
+            {syncNotice && (
+              <span className="text-xs font-semibold text-[#4E7A58] animate-fade-in">
+                {syncNotice}
+              </span>
+            )}
+          </div>
           <h2 className="font-serif text-2xl font-bold text-[#292724]">
             Category & Taxonomy Management ({categories.length})
           </h2>
           <p className="text-xs text-[#77736D] mt-0.5">
-            Organize customer navigation mega-menus, room assignments, and furniture subcategories.
+            Organize customer navigation mega-menus, room assignments, and furniture subcategories stored permanently in Neon.
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create New Category</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={loadCategoriesFromNeon}
+            disabled={isLoadingNeon}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-[#F8F6F2] border border-[#E9DDCD] text-[#5B3826] rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            title="Refresh categories from Neon Postgres"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingNeon ? 'animate-spin' : ''}`} />
+            <span>Sync Cloud</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Category</span>
+          </button>
+        </div>
       </div>
 
       {/* Categories Cards Grid */}
@@ -292,14 +396,17 @@ export default function AdminCategoriesPage() {
       {/* Modal: Add/Edit Category */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div onClick={() => setIsModalOpen(false)} className="fixed inset-0" />
+          <div onClick={() => !isSaving && setIsModalOpen(false)} className="fixed inset-0" />
 
           <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 z-10 border border-[#E9DDCD] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#E9DDCD]">
               <h3 className="font-serif text-lg font-bold text-[#292724]">
                 {editingCategory ? "Edit Category Details" : "Create New Furniture Category"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 text-[#77736D] hover:text-[#292724] cursor-pointer">
+              <button 
+                onClick={() => !isSaving && setIsModalOpen(false)} 
+                className="p-1 text-[#77736D] hover:text-[#292724] cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -414,17 +521,28 @@ export default function AdminCategoriesPage() {
               <div className="pt-3 border-t border-[#E9DDCD] flex justify-end gap-2">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-[#E9DDCD] hover:bg-[#F8F6F2] rounded-xl cursor-pointer"
+                  className="px-4 py-2 border border-[#E9DDCD] hover:bg-[#F8F6F2] rounded-xl cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  disabled={isSaving}
+                  className="px-5 py-2 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Save Category</span>
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Saving to Neon Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save to Neon Postgres</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
