@@ -112,6 +112,26 @@ export default function ProductFormModal({ isOpen, onClose, productToEdit, onSav
     }
   };
 
+  const handleProductImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (PNG, JPG, WEBP).');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, event.target.result]
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleRemoveImage = (index) => {
     setFormData(prev => ({
       ...prev,
@@ -435,23 +455,39 @@ export default function ProductFormModal({ isOpen, onClose, productToEdit, onSav
               ))}
             </div>
 
-            {/* Add new image URL */}
-            <div className="flex gap-2">
+            {/* Add image from System or URL */}
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="url"
                 value={newImageUrl}
                 onChange={(e) => setNewImageUrl(e.target.value)}
-                placeholder="Paste high-res furniture photo URL (Unsplash or CDN)..."
+                placeholder="Or paste furniture photo URL..."
                 className="flex-1 px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
               />
-              <button
-                type="button"
-                onClick={handleAddImage}
-                className="px-4 py-2 bg-[#F8F6F2] hover:bg-[#E9DDCD] text-[#5B3826] border border-[#E9DDCD] rounded-xl font-semibold flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Image</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddImage}
+                  className="px-3.5 py-2 bg-[#F8F6F2] hover:bg-[#E9DDCD] text-[#5B3826] border border-[#E9DDCD] rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer text-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add URL</span>
+                </button>
+                <label
+                  htmlFor="product-image-upload"
+                  className="px-4 py-2 bg-[#5B3826] hover:bg-[#4A2E1F] text-white rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer text-xs shadow-xs"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload from System</span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="product-image-upload"
+                  onChange={handleProductImageUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
           </div>
 

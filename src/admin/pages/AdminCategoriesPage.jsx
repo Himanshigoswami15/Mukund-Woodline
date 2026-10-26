@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, FolderTree, ArrowRight, X, Check, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, FolderTree, ArrowRight, X, Check, Image as ImageIcon, Upload } from 'lucide-react';
 import { CATEGORIES } from '../../data/products';
 
 // Helper to sanitize and format URL-friendly slugs
@@ -68,7 +68,7 @@ export default function AdminCategoriesPage() {
       name: '',
       slug: '',
       tagline: '',
-      image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
+      image: '',
       subcategoriesText: 'Sofas, Coffee Tables, Accent Chairs'
     });
     setIsModalOpen(true);
@@ -84,6 +84,23 @@ export default function AdminCategoriesPage() {
       subcategoriesText: cat.subcategories?.map(s => s.name).join(', ') || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please choose an image file (PNG, JPG, JPEG, WEBP).');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFormData(prev => ({ ...prev, image: event.target.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = (e) => {
@@ -323,14 +340,64 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Cover Image URL</label>
+                <label className="block font-semibold mb-1.5">Category Cover Image (Upload from System)</label>
+                
+                {/* Hidden native file input */}
                 <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826]"
+                  type="file"
+                  accept="image/*"
+                  id="category-image-upload"
+                  onChange={handleImageFileUpload}
+                  className="hidden"
                 />
+
+                {formData.image ? (
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-[#5B3826]/40 p-2 bg-[#F8F6F2]">
+                    <div className="relative aspect-16/9 rounded-xl overflow-hidden bg-white">
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20" />
+                      <div className="absolute top-2 right-2 flex items-center gap-2">
+                        <label
+                          htmlFor="category-image-upload"
+                          className="px-3 py-1.5 bg-white/95 hover:bg-white text-[#5B3826] font-semibold text-xs rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5 transition-all backdrop-blur-xs"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Change Photo</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, image: '' })}
+                          className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-sm cursor-pointer transition-colors"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[#77736D] mt-1.5 text-center">
+                      Image loaded from your system. Click "Change Photo" to pick another file.
+                    </p>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="category-image-upload"
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-[#E9DDCD] hover:border-[#5B3826] bg-[#FAF7F2] hover:bg-[#F3EFEA] rounded-2xl p-6 transition-all cursor-pointer text-center group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#E9DDCD]/50 group-hover:bg-[#5B3826]/10 text-[#5B3826] flex items-center justify-center mb-2.5 transition-colors">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <span className="font-semibold text-xs text-[#292724]">
+                      Click to choose an image from your computer
+                    </span>
+                    <span className="text-[11px] text-[#77736D] mt-1">
+                      Uploads JPG, PNG, WEBP, or AVIF directly from your system
+                    </span>
+                  </label>
+                )}
               </div>
 
               <div>
