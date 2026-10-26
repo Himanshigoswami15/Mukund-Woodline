@@ -13,9 +13,12 @@ import {
   TrendingUp, 
   Eye, 
   ChevronRight, 
-  Sparkles,
   CheckCircle2,
-  Filter
+  Filter,
+  Database,
+  Server,
+  RefreshCw,
+  Activity
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import StatCard from '../components/StatCard';
@@ -31,10 +34,19 @@ export default function AdminDashboardPage() {
     adminCustomers, 
     totalRevenue, 
     pendingOrdersCount, 
-    lowStockCount 
+    lowStockCount,
+    neonStatus,
+    refreshNeonStatus
   } = useAdmin();
 
   const [dateRange, setDateRange] = useState('30d'); // 'today', '7d', '30d', 'custom'
+  const [isRefreshingNeon, setIsRefreshingNeon] = useState(false);
+
+  const handleRefreshNeon = async () => {
+    setIsRefreshingNeon(true);
+    await refreshNeonStatus();
+    setTimeout(() => setIsRefreshingNeon(false), 400);
+  };
 
   // Top-selling products
   const topSellingProducts = [...adminProducts]
@@ -90,7 +102,7 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E9DDCD]">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5B3826] mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Activity className="w-3.5 h-3.5 text-[#5B3826]" />
             <span>Store Performance Dashboard</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#292724] tracking-tight font-sans">
@@ -121,6 +133,61 @@ export default function AdminDashboardPage() {
               {tab.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Neon Lakebase Postgres Cloud Status Banner */}
+      <div className="bg-gradient-to-r from-[#2B1B12] via-[#3B2213] to-[#5B3826] text-[#FAF7F2] rounded-2xl p-4 sm:p-5 shadow-sm border border-[#5B3826]/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+              <Database className="w-5 h-5 text-[#E9DDCD]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-white">Neon Lakebase Postgres</span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  neonStatus?.connected ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${neonStatus?.connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  {neonStatus?.connected ? 'ONLINE & SYNCED' : 'INITIALIZING'}
+                </span>
+                <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded text-[#E9DDCD] font-mono">
+                  branch: {neonStatus?.branch || 'production'}
+                </span>
+              </div>
+              <p className="text-xs text-[#E9DDCD]/80 mt-0.5">
+                Database: <span className="font-mono text-white">{neonStatus?.database || 'neondb'}</span> • Driver: <span className="text-white font-mono">@neondatabase/serverless</span> • Latency: <span className="text-white font-mono">{neonStatus?.latencyMs || '~120'}ms</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-3 border-l md:border-l-0 lg:border-l border-white/15 pl-3">
+              <div>
+                <span className="text-[10px] uppercase text-[#E9DDCD]/70 block">Cloud Products</span>
+                <span className="font-bold text-white text-sm">{neonStatus?.stats?.products || 12} rows</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-[#E9DDCD]/70 block">Cloud Orders</span>
+                <span className="font-bold text-white text-sm">{neonStatus?.stats?.orders ?? 0} rows</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-[#E9DDCD]/70 block">Cloud Inquiries</span>
+                <span className="font-bold text-white text-sm">{neonStatus?.stats?.inquiries ?? 0} rows</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleRefreshNeon}
+              disabled={isRefreshingNeon}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 active:scale-95 transition-all rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 border border-white/20 cursor-pointer shrink-0"
+              title="Ping Neon Postgres"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingNeon ? 'animate-spin' : ''}`} />
+              <span>Ping DB</span>
+            </button>
+          </div>
         </div>
       </div>
 

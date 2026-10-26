@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PRODUCTS } from '../data/products';
+import { saveOrderToNeon } from '../services/neonService';
 
 const ShopContext = createContext();
 
@@ -339,6 +340,23 @@ export const ShopProvider = ({ children }) => {
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
     setAppliedCoupon(null);
+
+    // Persist order to Neon Lakebase Postgres
+    saveOrderToNeon({
+      id: newOrderId,
+      customerName: orderDetails.fullName,
+      customerEmail: orderDetails.email,
+      customerPhone: orderDetails.phone,
+      items: newOrder.items,
+      totalAmount: orderTotal,
+      status: "Order Confirmed",
+      shippingAddress: orderDetails.address,
+      paymentMethod: orderDetails.paymentMethod,
+      createdAt: new Date().toISOString()
+    }).catch(err => {
+      console.warn('[ShopContext] Failed to sync order to Neon:', err);
+    });
+
     return newOrder;
   };
 

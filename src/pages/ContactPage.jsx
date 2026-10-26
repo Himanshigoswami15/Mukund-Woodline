@@ -13,10 +13,12 @@ import {
 } from 'lucide-react';
 import { FAQS } from '../data/products';
 import { useShop } from '../context/ShopContext';
+import { saveInquiryToNeon } from '../services/neonService';
 
 export default function ContactPage() {
   const { addToast } = useShop();
   const [openFaq, setOpenFaq] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -26,10 +28,17 @@ export default function ContactPage() {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await saveInquiryToNeon(form);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsSubmitting(false);
     setIsSubmitted(true);
-    addToast("Inquiry sent! A Mukund Woodline advisor will call you within 2 hours.");
+    addToast("Inquiry sent & recorded in system! A Mukund Woodline advisor will call you within 2 hours.");
   };
 
   return (

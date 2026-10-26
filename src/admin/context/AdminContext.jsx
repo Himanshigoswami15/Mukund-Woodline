@@ -1,9 +1,35 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PRODUCTS, CATEGORIES, PROMOTIONAL_BANNERS } from '../../data/products';
+import { checkNeonConnection, fetchOrdersFromNeon, fetchInquiriesFromNeon } from '../../services/neonService';
 
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
+  // Neon Lakebase Postgres Status
+  const [neonStatus, setNeonStatus] = useState({
+    checked: false,
+    connected: false,
+    latencyMs: 0,
+    branch: 'production',
+    database: 'neondb',
+    stats: { products: 0, orders: 0, inquiries: 0 }
+  });
+
+  const refreshNeonStatus = async () => {
+    try {
+      const res = await checkNeonConnection();
+      setNeonStatus({ checked: true, ...res });
+      return res;
+    } catch (e) {
+      console.error('[AdminContext] Failed to check Neon status:', e);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    refreshNeonStatus();
+  }, []);
+
   // 1. Admin Authentication - Requires login by default unless active session exists
   const [adminUser, setAdminUser] = useState(() => {
     try {
@@ -763,7 +789,9 @@ export const AdminProvider = ({ children }) => {
         setNotifications,
         totalRevenue,
         pendingOrdersCount,
-        lowStockCount
+        lowStockCount,
+        neonStatus,
+        refreshNeonStatus
       }}
     >
       {children}
