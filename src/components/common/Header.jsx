@@ -272,7 +272,7 @@ export default function Header() {
                 <User className="w-4 h-4" />
               </div>
               <div className="hidden xl:flex flex-col text-left">
-                <span className="text-[11px] text-[#5C5855]">Welcome</span>
+                <span className="text-[10px] uppercase tracking-wider text-[#8C5835] font-medium">Account</span>
                 <span className="text-xs font-semibold text-[#3B2213] max-w-[90px] truncate">
                   {user?.isLoggedIn ? user.name.split(' ')[0] : "Sign In"}
                 </span>

@@ -243,10 +243,6 @@ export default function Footer() {
             <Link to="/contact" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span>•</span>
             <Link to="/contact" className="hover:text-white transition-colors">Terms of Service</Link>
-            <span>•</span>
-            <Link to="/admin" className="text-[#B4845C] hover:text-white font-semibold transition-colors flex items-center gap-1">
-              <span>Admin Portal 🔐</span>
-            </Link>
           </div>
         </div>
       </div>

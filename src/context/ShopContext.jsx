@@ -30,18 +30,24 @@ export const ShopProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('mw_user');
-      return saved ? JSON.parse(saved) : {
-        name: "Vikram Malhotra",
-        email: "vikram.m@example.com",
-        phone: "+91 98201 44521",
-        isLoggedIn: true
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email && parsed.email !== "vikram.m@example.com") {
+          return parsed;
+        }
+      }
+      return {
+        name: "",
+        email: "",
+        phone: "",
+        isLoggedIn: false
       };
     } catch {
       return {
-        name: "Vikram Malhotra",
-        email: "vikram.m@example.com",
-        phone: "+91 98201 44521",
-        isLoggedIn: true
+        name: "",
+        email: "",
+        phone: "",
+        isLoggedIn: false
       };
     }
   });
