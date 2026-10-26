@@ -4,27 +4,19 @@ import { PRODUCTS, CATEGORIES, PROMOTIONAL_BANNERS } from '../../data/products';
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-  // 1. Admin Authentication
+  // 1. Admin Authentication - Requires login by default unless active session exists
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const saved = localStorage.getItem('mw_admin_session');
-      return saved ? JSON.parse(saved) : {
-        id: "adm-01",
-        name: "Mukul Sharma",
-        email: "admin@mukulwoodline.com",
-        role: "Super Admin",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-        isAuthenticated: true
-      };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.isAuthenticated) {
+          return parsed;
+        }
+      }
+      return null;
     } catch {
-      return {
-        id: "adm-01",
-        name: "Mukul Sharma",
-        email: "admin@mukulwoodline.com",
-        role: "Super Admin",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-        isAuthenticated: true
-      };
+      return null;
     }
   });
 
@@ -33,10 +25,11 @@ export const AdminProvider = ({ children }) => {
     if (!email || !password) {
       return { success: false, message: "Please enter both admin email and password." };
     }
-    // Allow demo credentials or valid format
     if (password.length < 6) {
       return { success: false, message: "Password must be at least 6 characters long." };
     }
+
+    const cleanEmail = email.trim().toLowerCase();
 
     // Check against registered admin staff in localStorage or memory
     let registeredStaff = [];
@@ -48,7 +41,7 @@ export const AdminProvider = ({ children }) => {
     }
 
     const matched = registeredStaff && registeredStaff.find(
-      s => s.email && s.email.toLowerCase() === email.trim().toLowerCase()
+      s => s.email && s.email.toLowerCase() === cleanEmail
     );
 
     if (matched) {
@@ -76,26 +69,51 @@ export const AdminProvider = ({ children }) => {
       return { success: true };
     }
 
-    // Default fallback demo login
-    const session = {
-      id: "adm-01",
-      name: email.toLowerCase().includes("rajesh") ? "Rajesh Verma" : 
-            (email.toLowerCase().includes("priya") ? "Priya Nair" : "Mukund Sharma"),
-      email: email,
-      role: email.toLowerCase().includes("rajesh") ? "Store Administrator" : "Super Admin",
-      canAddAdmins: true,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-      isAuthenticated: true,
-      lastLogin: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-    };
-    setAdminUser(session);
-    localStorage.setItem('mw_admin_session', JSON.stringify(session));
-    return { success: true };
+    // Default Super Admin credentials
+    const isSuperAdmin = (cleanEmail === 'admin@mukundwoodline.com' || cleanEmail === 'admin@mukulwoodline.com');
+    if (isSuperAdmin) {
+      if (password !== 'admin123') {
+        return { success: false, message: "Incorrect password for administrator account." };
+      }
+
+      const session = {
+        id: "adm-01",
+        name: "Mukund Sharma",
+        email: cleanEmail,
+        role: "Super Admin",
+        canAddAdmins: true,
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+        isAuthenticated: true,
+        lastLogin: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      };
+      setAdminUser(session);
+      localStorage.setItem('mw_admin_session', JSON.stringify(session));
+      return { success: true };
+    }
+
+    // Generic authorized staff login check
+    if (password === 'admin123') {
+      const session = {
+        id: "adm-staff",
+        name: cleanEmail.includes("rajesh") ? "Rajesh Verma" : 
+              (cleanEmail.includes("priya") ? "Priya Nair" : "Store Administrator"),
+        email: cleanEmail,
+        role: cleanEmail.includes("rajesh") ? "Store Administrator" : "Catalog Manager",
+        canAddAdmins: false,
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+        isAuthenticated: true,
+        lastLogin: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      };
+      setAdminUser(session);
+      localStorage.setItem('mw_admin_session', JSON.stringify(session));
+      return { success: true };
+    }
+
+    return { success: false, message: "Invalid administrator credentials. Please check email and password." };
   };
 
   const logout = () => {
-    const unauth = { isAuthenticated: false };
-    setAdminUser(unauth);
+    setAdminUser(null);
     localStorage.removeItem('mw_admin_session');
   };
 

@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, adminUser } = useAdmin();
 
-  const [email, setEmail] = useState('admin@mukulwoodline.com');
+  const redirectTarget = location.state?.from?.pathname || '/admin';
+
+  const [email, setEmail] = useState('admin@mukundwoodline.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // If already logged in, redirect to admin area
+  useEffect(() => {
+    if (adminUser?.isAuthenticated) {
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [adminUser, navigate, redirectTarget]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,21 +33,21 @@ export default function AdminLoginPage() {
       const res = login(email, password);
       setIsLoading(false);
       if (res.success) {
-        navigate('/admin');
+        navigate(redirectTarget, { replace: true });
       } else {
         setErrorMessage(res.message || "Invalid administrator credentials.");
       }
-    }, 700);
+    }, 500);
   };
 
   const handleDemoSignIn = () => {
-    setEmail('admin@mukulwoodline.com');
+    setEmail('admin@mukundwoodline.com');
     setPassword('admin123');
     setIsLoading(true);
     setTimeout(() => {
-      login('admin@mukulwoodline.com', 'admin123');
+      login('admin@mukundwoodline.com', 'admin123');
       setIsLoading(false);
-      navigate('/admin');
+      navigate(redirectTarget, { replace: true });
     }, 400);
   };
 
@@ -48,7 +58,7 @@ export default function AdminLoginPage() {
       <div className="hidden lg:flex lg:w-1/2 relative bg-[#5B3826] overflow-hidden select-none">
         <img
           src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=85"
-          alt="Mukul Woodlline Interior"
+          alt="Mukund Woodline Interior"
           className="absolute inset-0 w-full h-full object-cover filter brightness-[0.65]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#3B2213]/95 via-[#5B3826]/60 to-transparent" />
@@ -76,7 +86,7 @@ export default function AdminLoginPage() {
           {/* Editorial quote */}
           <div className="space-y-4 max-w-lg">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-[#E9DDCD]">
-              <Sparkles className="w-3.5 h-3.5 text-[#E9DDCD]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#E9DDCD]" />
               <span>Enterprise Furniture Management Suite</span>
             </div>
 
@@ -106,7 +116,7 @@ export default function AdminLoginPage() {
 
           {/* Footer note */}
           <div className="text-[11px] text-[#E9DDCD]/60">
-            © {new Date().getFullYear()} Mukul Woodlline Private Limited. Internal Enterprise Access Only.
+            © {new Date().getFullYear()} Mukund Woodline Private Limited. Internal Enterprise Access Only.
           </div>
         </div>
       </div>
@@ -167,7 +177,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@mukulwoodline.com"
+                  placeholder="admin@mukundwoodline.com"
                   className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#F8F6F2] border border-[#E9DDCD] rounded-xl text-[#292724] focus:outline-none focus:ring-2 focus:ring-[#5B3826]/20 focus:border-[#5B3826] transition-all"
                 />
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#77736D]" />
@@ -265,7 +275,7 @@ export default function AdminLoginPage() {
               to="/"
               className="text-xs font-semibold text-[#77736D] hover:text-[#5B3826] transition-colors"
             >
-              ← Return to Mukul Woodlline Customer Website
+              ← Return to Mukund Woodline Customer Website
             </Link>
           </div>
 
