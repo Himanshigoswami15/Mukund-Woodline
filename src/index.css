@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-brand: 'Marcellus', 'Cormorant Garamond', Georgia, serif;
+  --font-editorial: 'Cormorant Garamond', Georgia, serif;
+}
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Cormorant Garamond', Georgia, serif;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-brand: 'Marcellus', 'Cormorant Garamond', Georgia, serif;
+
+    --color-wood-950: #23140A;
+    --color-wood-900: #3B2213;
+    --color-wood-800: #54321D;
+    --color-wood-700: #734529;
+    --color-wood-600: #8C5835;
+    --color-wood-500: #B4845C;
+    --color-wood-400: #CBB093;
+    --color-wood-200: #E6DFD5;
+    --color-wood-100: #F3EFEA;
+    --color-wood-50: #FAF7F2;
+
+    --color-terracotta: #C85A32;
+    --color-olive: #556B2F;
+    --color-charcoal: #1E1E1E;
+    --color-charcoal-muted: #5C5855;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-wood-50);
+    color: var(--color-charcoal);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  .font-serif {
+    font-family: 'Cormorant Garamond', Georgia, serif !important;
+  }
+
+  .font-sans {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-editorial {
+    font-family: var(--font-serif);
+  }
+
+  .font-brand,
+  .font-brand-title {
+    font-family: var(--font-brand);
+  }
+}
+
+/* Custom smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F3EFEA;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBB093;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8C5835;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Line clamp helpers */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
