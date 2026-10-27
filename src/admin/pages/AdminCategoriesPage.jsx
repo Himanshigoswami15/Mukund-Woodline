@@ -91,13 +91,14 @@ export default function AdminCategoriesPage() {
     loadCategoriesFromNeon();
   }, []);
 
-  // Persist to localStorage as secondary cache
+  // Persist to localStorage and dispatch update event to store
   useEffect(() => {
     try {
       localStorage.setItem('mw_admin_categories', JSON.stringify(categories));
     } catch (e) {
       // Ignored if local storage quota exceeded by image data
     }
+    window.dispatchEvent(new CustomEvent('mw_categories_updated', { detail: categories }));
   }, [categories]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

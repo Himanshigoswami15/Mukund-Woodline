@@ -29,8 +29,14 @@ export default function Header() {
     pincodeCity, 
     checkPincode,
     isMobileMenuOpen,
-    setIsMobileMenuOpen
+    setIsMobileMenuOpen,
+    categories,
+    products
   } = useShop();
+
+  // Dynamic active categories from Neon Postgres / Admin
+  const sourceCategories = (categories && categories.length > 0) ? categories : CATEGORIES;
+  const navCategories = sourceCategories.filter(c => c.status !== 'Hidden');
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -344,27 +350,31 @@ export default function Header() {
 
       <nav ref={megaMenuRef} className="hidden lg:block border-t border-[#E6DFD5] bg-[#FAF7F2]/95 backdrop-blur-xs relative">
         <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16">
-          <ul className="flex items-center justify-between text-[12.5px] font-medium tracking-[0.03em] text-[#3B2213]">
-            {CATEGORIES.map((cat) => (
-              <li 
-                key={cat.id}
-                onMouseEnter={() => setActiveMegaCategory(cat.id)}
-                className="py-3"
-              >
-                <Link
-                  to={`/category/${cat.slug}`}
-                  className={`flex items-center gap-1 hover:text-[#8C5835] transition-colors py-1 ${
-                    activeMegaCategory === cat.id ? "text-[#8C5835] border-b-2 border-[#8C5835]" : ""
-                  }`}
+          <ul className="flex items-center justify-between text-[12.5px] font-medium tracking-[0.03em] text-[#3B2213] overflow-x-auto scrollbar-none">
+            {navCategories.map((cat) => {
+              const catKey = cat.id || cat.slug;
+              const catSlug = cat.slug || cat.id;
+              return (
+                <li 
+                  key={catKey}
+                  onMouseEnter={() => setActiveMegaCategory(catKey)}
+                  className="py-3 shrink-0 px-1"
                 >
-                  <span>{cat.name}</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </Link>
-              </li>
-            ))}
+                  <Link
+                    to={`/category/${catSlug}`}
+                    className={`flex items-center gap-1 hover:text-[#8C5835] transition-colors py-1 ${
+                      activeMegaCategory === catKey ? "text-[#8C5835] border-b-2 border-[#8C5835]" : ""
+                    }`}
+                  >
+                    <span>{cat.name}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60" />
+                  </Link>
+                </li>
+              );
+            })}
             
             {/* Direct quick links */}
-            <li className="py-3">
+            <li className="py-3 shrink-0 px-1">
               <Link 
                 to="/shop?tag=new-arrival" 
                 className="text-[#8C5835] hover:text-[#3B2213] transition-colors"
@@ -372,7 +382,7 @@ export default function Header() {
                 <span>New Arrivals</span>
               </Link>
             </li>
-            <li className="py-3">
+            <li className="py-3 shrink-0 px-1">
               <Link 
                 to="/shop?discount=25" 
                 className="text-[#C85A32] font-bold hover:underline transition-colors"
@@ -390,8 +400,12 @@ export default function Header() {
             className="absolute left-0 right-0 top-full bg-white border-b border-[#E6DFD5] shadow-2xl py-6 z-50 animate-fade-in"
           >
             {(() => {
-              const category = CATEGORIES.find(c => c.id === activeMegaCategory);
+              const category = navCategories.find(c => (c.id === activeMegaCategory || c.slug === activeMegaCategory));
               if (!category) return null;
+
+              const rawSubs = category.subcategories || [];
+              const subList = rawSubs.map(s => typeof s === 'string' ? { name: s, slug: s.toLowerCase().replace(/[^a-z0-9]+/g, '-') } : s);
+              const catSlug = category.slug || category.id;
 
               return (
                 <div className="w-full px-6 sm:px-10 lg:px-16 grid grid-cols-4 gap-8">
@@ -402,16 +416,27 @@ export default function Header() {
                         Popular Collections
                       </h4>
                       <ul className="mt-3 space-y-2">
-                        {category.subcategories.slice(0, 4).map((sub, idx) => (
-                          <li key={idx}>
+                        {subList.length > 0 ? (
+                          subList.slice(0, 6).map((sub, idx) => (
+                            <li key={idx}>
+                              <Link
+                                to={`/category/${catSlug}?sub=${encodeURIComponent(sub.name)}`}
+                                className="text-xs text-[#5C5855] hover:text-[#8C5835] hover:translate-x-1 inline-block transition-transform"
+                              >
+                                {sub.name}
+                              </Link>
+                            </li>
+                          ))
+                        ) : (
+                          <li>
                             <Link
-                              to={`/category/${category.slug}?sub=${encodeURIComponent(sub.name)}`}
-                              className="text-xs text-[#5C5855] hover:text-[#8C5835] hover:translate-x-1 inline-block transition-transform"
+                              to={`/category/${catSlug}`}
+                              className="text-xs text-[#5C5855] hover:text-[#8C5835]"
                             >
-                              {sub.name}
+                              Explore all {category.name}
                             </Link>
                           </li>
-                        ))}
+                        )}
                       </ul>
                     </div>
 
@@ -421,22 +446,22 @@ export default function Header() {
                       </h4>
                       <ul className="mt-3 space-y-2 text-xs text-[#5C5855]">
                         <li>
-                          <Link to={`/category/${category.slug}?material=sheesham`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
+                          <Link to={`/category/${catSlug}?material=sheesham`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
                             Solid Sheesham Wood (Heirloom)
                           </Link>
                         </li>
                         <li>
-                          <Link to={`/category/${category.slug}?material=teak`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
+                          <Link to={`/category/${catSlug}?material=teak`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
                             Pure Seasoned Teak Wood
                           </Link>
                         </li>
                         <li>
-                          <Link to={`/category/${category.slug}?material=rattan`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
+                          <Link to={`/category/${catSlug}?material=rattan`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
                             Hand-Woven Rattan Cane Inlay
                           </Link>
                         </li>
                         <li>
-                          <Link to={`/category/${category.slug}?material=marble`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
+                          <Link to={`/category/${catSlug}?material=marble`} className="hover:text-[#8C5835] inline-block hover:translate-x-1 transition-transform">
                             Indian Marble & Brass Details
                           </Link>
                         </li>
@@ -454,14 +479,14 @@ export default function Header() {
                         {category.name} Range
                       </h4>
                       <p className="text-xs text-[#5C5855] mt-1.5 leading-relaxed">
-                        {category.tagline}
+                        {category.tagline || 'Heirloom quality handcrafted for generations of joyful family gatherings.'}
                       </p>
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-[#E6DFD5] flex items-center justify-between">
-                      <span className="text-xs text-[#3B2213] font-medium">{category.itemCount}+ designs</span>
+                      <span className="text-xs text-[#3B2213] font-medium">{category.itemCount || 0}+ designs</span>
                       <Link 
-                        to={`/category/${category.slug}`}
+                        to={`/category/${catSlug}`}
                         className="text-xs font-semibold text-[#8C5835] hover:text-[#3B2213] flex items-center gap-1 group"
                       >
                         <span>View All</span>
@@ -473,15 +498,18 @@ export default function Header() {
                   {/* Column 4: Category Visual Banner */}
                   <div className="relative rounded-xl overflow-hidden shadow-sm group">
                     <img 
-                      src={category.image} 
+                      src={category.image || "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=600&q=80"} 
                       alt={category.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 min-h-[160px]"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=600&q=80";
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 text-white">
                       <span className="text-[11px] font-medium text-[#FAF7F2]/90">Starting at ₹13,999</span>
                       <h5 className="font-serif text-sm font-bold text-white mt-0.5">Custom Finish Available</h5>
                       <Link
-                        to={`/category/${category.slug}`}
+                        to={`/category/${catSlug}`}
                         className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#FAF7F2] hover:text-[#E6DFD5]"
                       >
                         <span>Explore Collection</span>
@@ -544,18 +572,21 @@ export default function Header() {
                 Shop By Category
               </div>
               <div className="space-y-1">
-                {CATEGORIES.map((cat) => (
-                  <div key={cat.id} className="border-b border-[#E6DFD5]/70 py-2">
-                    <Link
-                      to={`/category/${cat.slug}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center justify-between text-sm font-medium text-[#3B2213] hover:text-[#8C5835]"
-                    >
-                      <span>{cat.name}</span>
-                      <ArrowRight className="w-4 h-4 text-[#8C5835]/70" />
-                    </Link>
-                  </div>
-                ))}
+                {navCategories.map((cat) => {
+                  const catSlug = cat.slug || cat.id;
+                  return (
+                    <div key={cat.id || catSlug} className="border-b border-[#E6DFD5]/70 py-2">
+                      <Link
+                        to={`/category/${catSlug}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-between text-sm font-medium text-[#3B2213] hover:text-[#8C5835]"
+                      >
+                        <span>{cat.name}</span>
+                        <ArrowRight className="w-4 h-4 text-[#8C5835]/70" />
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Quick Links */}

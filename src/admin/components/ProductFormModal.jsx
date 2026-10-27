@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Upload, Plus, Trash2, Check, Image as ImageIcon } from 'lucide-react';
 import { CATEGORIES } from '../../data/products';
 import { useAdmin } from '../context/AdminContext';
+import { useShop } from '../../context/ShopContext';
 
 export default function ProductFormModal({ isOpen, onClose, productToEdit, onSave }) {
   const { addProduct, updateProduct } = useAdmin();
+  const { categories } = useShop();
+  const availableCategories = (categories && categories.length > 0) ? categories : CATEGORIES;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -89,13 +92,15 @@ export default function ProductFormModal({ isOpen, onClose, productToEdit, onSav
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (name === 'category') {
-      const cat = CATEGORIES.find(c => c.id === value);
+      const cat = availableCategories.find(c => c.id === value || c.slug === value);
       if (cat) {
+        const sub0 = cat.subcategories?.[0];
+        const subName = typeof sub0 === 'string' ? sub0 : sub0?.name || '';
         setFormData(prev => ({
           ...prev,
           categoryName: cat.name,
-          room: cat.id,
-          subcategory: cat.subcategories[0]?.name || ''
+          room: cat.id || cat.slug,
+          subcategory: subName
         }));
       }
     }
@@ -232,8 +237,8 @@ export default function ProductFormModal({ isOpen, onClose, productToEdit, onSav
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-[#E9DDCD] rounded-xl focus:outline-none focus:border-[#5B3826] bg-white cursor-pointer"
                 >
-                  {CATEGORIES.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                  {availableCategories.map(c => (
+                    <option key={c.id || c.slug} value={c.id || c.slug}>{c.name}</option>
                   ))}
                 </select>
               </div>

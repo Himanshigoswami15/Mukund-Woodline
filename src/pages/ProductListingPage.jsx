@@ -12,8 +12,13 @@ import {
 import ProductCard from '../components/products/ProductCard';
 import ProductFilters from '../components/products/ProductFilters';
 import { PRODUCTS, CATEGORIES, ROOMS } from '../data/products';
+import { useShop } from '../context/ShopContext';
 
 export default function ProductListingPage() {
+  const { categories, products } = useShop();
+  const sourceCategories = (categories && categories.length > 0) ? categories : CATEGORIES;
+  const sourceProducts = (products && products.length > 0) ? products : PRODUCTS;
+
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const searchParam = searchParams.get('search');
@@ -41,8 +46,12 @@ export default function ProductListingPage() {
   // Items to show (for Load More)
   const [visibleCount, setVisibleCount] = useState(8);
 
-  // Identify category or room
-  const matchedCategory = CATEGORIES.find(c => c.slug === slug);
+  // Identify category or room from dynamic categories
+  const matchedCategory = sourceCategories.find(c => 
+    c.slug === slug || 
+    c.id === slug ||
+    (c.name && c.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug)
+  );
   const matchedRoom = ROOMS.find(r => r.slug === slug);
 
   // Title and subtitle
@@ -51,7 +60,7 @@ export default function ProductListingPage() {
 
   if (matchedCategory) {
     pageTitle = matchedCategory.name;
-    pageDescription = matchedCategory.tagline;
+    pageDescription = matchedCategory.tagline || `Explore our heirloom-grade handcrafted solid wood ${matchedCategory.name} collection.`;
   } else if (matchedRoom) {
     pageTitle = `${matchedRoom.name} Furniture`;
     pageDescription = matchedRoom.description;
@@ -68,11 +77,40 @@ export default function ProductListingPage() {
 
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
-    let result = [...PRODUCTS];
+    let result = [...sourceProducts];
 
     // Category / Room / Search filter
     if (matchedCategory) {
-      result = result.filter(p => p.category === matchedCategory.id || p.categoryName.toLowerCase().includes(matchedCategory.name.toLowerCase()));
+      const catId = (matchedCategory.id || '').toLowerCase();
+      const catSlug = (matchedCategory.slug || '').toLowerCase();
+      const catName = (matchedCategory.name || '').toLowerCase();
+      const catClean = catName.replace(/[^a-z0-9]/g, '');
+
+      result = result.filter(p => {
+        const pCat = (p.category || '').toLowerCase();
+        const pCatName = (p.categoryName || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        const pRoom = (p.room || '').toLowerCase();
+
+        // Exact category ID or slug
+        if (pCat === catId || pCat === catSlug) return true;
+
+        // Subcategory match
+        if (matchedCategory.subcategories && matchedCategory.subcategories.length > 0) {
+          const matchSub = matchedCategory.subcategories.some(sub => {
+            const sName = (typeof sub === 'string' ? sub : sub.name || '').toLowerCase();
+            return sName && (pCatName.includes(sName) || pName.includes(sName));
+          });
+          if (matchSub) return true;
+        }
+
+        // Fuzzy match on dining / dinning or name keywords
+        if (pCatName.includes(catName) || (catName.length > 3 && pCatName.includes(catName.substring(0, 4)))) return true;
+        if (catClean.includes('din') && (pName.includes('din') || pCatName.includes('din'))) return true;
+        if (pRoom === catId || pRoom === catSlug) return true;
+
+        return false;
+      });
     } else if (matchedRoom) {
       result = result.filter(p => p.room === matchedRoom.id);
     } else if (searchParam) {

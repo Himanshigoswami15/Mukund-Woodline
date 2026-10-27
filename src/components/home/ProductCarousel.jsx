@@ -2,8 +2,11 @@ import React, { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock, TrendingUp, Award, ThumbsUp } from 'lucide-react';
 import ProductCard from '../products/ProductCard';
 import { PRODUCTS } from '../../data/products';
+import { useShop } from '../../context/ShopContext';
 
 export default function ProductCarousel() {
+  const { products } = useShop();
+  const sourceProducts = (products && products.length > 0) ? products : PRODUCTS;
   const [activeTab, setActiveTab] = useState('bestseller');
   const scrollRef = useRef(null);
 
@@ -18,14 +21,14 @@ export default function ProductCarousel() {
   const getProducts = () => {
     switch (activeTab) {
       case 'bestseller':
-        return PRODUCTS.filter(p => p.badge === 'Bestseller' || p.rating >= 4.8);
+        return sourceProducts.filter(p => p.badge === 'Bestseller' || p.rating >= 4.8);
       case 'new-arrival':
-        return PRODUCTS.filter(p => p.badge === 'New Arrival' || p.discount >= 30);
+        return sourceProducts.filter(p => p.badge === 'New Arrival' || p.discount >= 30);
       case 'trending':
-        return PRODUCTS.filter(p => p.badge === 'Trending' || p.reviewCount > 70);
+        return sourceProducts.filter(p => p.badge === 'Trending' || p.reviewCount > 70);
       case 'recommended':
       default:
-        return PRODUCTS.slice(0, 6);
+        return sourceProducts.slice(0, 6);
     }
   };
 

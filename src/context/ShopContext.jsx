@@ -1,10 +1,118 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PRODUCTS } from '../data/products';
-import { saveOrderToNeon } from '../services/neonService';
+import { PRODUCTS, CATEGORIES } from '../data/products';
+import { saveOrderToNeon, fetchCategoriesFromNeon } from '../services/neonService';
 
 const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
+  // Categories state initialized from localStorage with fallback to default CATEGORIES
+  const [categories, setCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mw_admin_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(c => ({
+            ...c,
+            slug: c.slug || c.id,
+            status: c.status || 'Active'
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('[ShopContext] Error reading mw_admin_categories:', e);
+    }
+    return CATEGORIES.map(c => ({
+      ...c,
+      status: c.status || 'Active'
+    }));
+  });
+
+  // Products state synchronized from Admin / localStorage
+  const [products, setProducts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mw_admin_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[ShopContext] Error reading mw_admin_products:', e);
+    }
+    return PRODUCTS;
+  });
+
+  // Fetch live categories permanently saved in Neon Lakebase Postgres
+  const refreshCategories = async () => {
+    try {
+      const cloudCats = await fetchCategoriesFromNeon();
+      if (cloudCats && cloudCats.length > 0) {
+        setCategories(cloudCats);
+        try {
+          localStorage.setItem('mw_admin_categories', JSON.stringify(cloudCats));
+        } catch (e) {
+          // ignore quota overflow
+        }
+        return cloudCats;
+      }
+    } catch (e) {
+      console.warn('[ShopContext] Failed to fetch categories from Neon:', e);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    refreshCategories();
+
+    // Listen to real-time updates when categories or products are modified in admin
+    const handleCategoriesUpdate = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setCategories(e.detail);
+        return;
+      }
+      try {
+        const saved = localStorage.getItem('mw_admin_categories');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories(parsed);
+          }
+        }
+      } catch (err) {
+        console.error('[ShopContext] Error syncing categories:', err);
+      }
+    };
+
+    const handleProductsUpdate = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setProducts(e.detail);
+        return;
+      }
+      try {
+        const saved = localStorage.getItem('mw_admin_products');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProducts(parsed);
+          }
+        }
+      } catch (err) {
+        console.error('[ShopContext] Error syncing products:', err);
+      }
+    };
+
+    window.addEventListener('storage', handleCategoriesUpdate);
+    window.addEventListener('mw_categories_updated', handleCategoriesUpdate);
+    window.addEventListener('mw_products_updated', handleProductsUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleCategoriesUpdate);
+      window.removeEventListener('mw_categories_updated', handleCategoriesUpdate);
+      window.removeEventListener('mw_products_updated', handleProductsUpdate);
+    };
+  }, []);
   // Cart state persisted in localStorage
   const [cart, setCart] = useState(() => {
     try {
@@ -406,7 +514,12 @@ export const ShopProvider = ({ children }) => {
         searchQuery,
         setSearchQuery,
         isMobileMenuOpen,
-        setIsMobileMenuOpen
+        setIsMobileMenuOpen,
+        categories,
+        setCategories,
+        refreshCategories,
+        products,
+        setProducts
       }}
     >
       {children}

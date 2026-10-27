@@ -17,10 +17,13 @@ import {
   Package
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
+import { useShop } from '../../context/ShopContext';
 import { CATEGORIES } from '../../data/products';
 import ProductFormModal from '../components/ProductFormModal';
 
 export default function AdminProductsPage() {
+  const { categories } = useShop();
+  const availableCategories = (categories && categories.length > 0) ? categories : CATEGORIES;
   const { 
     adminProducts, 
     deleteProduct, 
@@ -193,9 +196,9 @@ export default function AdminProductsPage() {
               }}
               className="w-full px-3 py-2 bg-[#F8F6F2] border border-[#E9DDCD] rounded-xl text-[#292724] focus:outline-none focus:border-[#5B3826] cursor-pointer"
             >
-              <option value="all">All Categories ({CATEGORIES.length})</option>
-              {CATEGORIES.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              <option value="all">All Categories ({availableCategories.length})</option>
+              {availableCategories.map(c => (
+                <option key={c.id || c.slug} value={c.id || c.slug}>{c.name}</option>
               ))}
             </select>
           </div>

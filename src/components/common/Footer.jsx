@@ -13,11 +13,16 @@ import {
   Heart
 } from 'lucide-react';
 import { CATEGORIES } from '../../data/products';
+import { useShop } from '../../context/ShopContext';
 import BrandLogo from './BrandLogo';
 
 export default function Footer() {
+  const { categories } = useShop();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+
+  const sourceCategories = (categories && categories.length > 0) ? categories : CATEGORIES;
+  const activeCategories = sourceCategories.filter(c => c.status !== 'Hidden');
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -141,13 +146,16 @@ export default function Footer() {
               Shop Categories
             </h4>
             <ul className="space-y-2.5 text-xs text-[#E6DFD5]/70">
-              {CATEGORIES.slice(0, 6).map((cat) => (
-                <li key={cat.id}>
-                  <Link to={`/category/${cat.slug}`} className="hover:text-white hover:underline transition-colors">
-                    {cat.name}
-                  </Link>
-                </li>
-              ))}
+              {activeCategories.slice(0, 8).map((cat) => {
+                const catSlug = cat.slug || cat.id;
+                return (
+                  <li key={cat.id || catSlug}>
+                    <Link to={`/category/${catSlug}`} className="hover:text-white hover:underline transition-colors">
+                      {cat.name}
+                    </Link>
+                  </li>
+                );
+              })}
               <li>
                 <Link to="/shop?tag=bestseller" className="hover:text-white transition-colors">
                   Bestselling Sets

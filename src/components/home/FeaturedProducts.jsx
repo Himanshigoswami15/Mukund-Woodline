@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import ProductCard from '../products/ProductCard';
 import { PRODUCTS } from '../../data/products';
+import { useShop } from '../../context/ShopContext';
 
 export default function FeaturedProducts() {
+  const { products } = useShop();
+  const sourceProducts = (products && products.length > 0) ? products : PRODUCTS;
   const [activeTab, setActiveTab] = useState('all');
 
   const tabs = [
@@ -16,8 +19,8 @@ export default function FeaturedProducts() {
   ];
 
   const filteredProducts = activeTab === 'all' 
-    ? PRODUCTS.slice(0, 8) 
-    : PRODUCTS.filter(p => p.room === activeTab || p.category === activeTab);
+    ? sourceProducts.slice(0, 8) 
+    : sourceProducts.filter(p => p.room === activeTab || p.category === activeTab);
 
   return (
     <section className="py-12 lg:py-16 bg-[#F8F5F0]">

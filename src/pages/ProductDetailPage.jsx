@@ -32,10 +32,12 @@ export default function ProductDetailPage() {
     pincode, 
     pincodeCity, 
     checkPincode,
-    addToast 
+    addToast,
+    products
   } = useShop();
 
-  const product = PRODUCTS.find(p => p.id === id) || PRODUCTS[0];
+  const sourceProducts = (products && products.length > 0) ? products : PRODUCTS;
+  const product = sourceProducts.find(p => p.id === id) || sourceProducts[0];
   const inWishlist = isInWishlist(product.id);
 
   // Gallery active index
