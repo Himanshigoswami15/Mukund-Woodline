@@ -65,12 +65,12 @@ export default function AdminLoginPage() {
 
         <div className="relative z-10 p-12 lg:p-16 flex flex-col justify-between text-[#F8F6F2]">
           {/* Brand header */}
-          <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/60 shadow-xl shrink-0 flex items-center justify-center">
+          <div className="flex items-center gap-4">
+            <div className="h-16 lg:h-20 w-auto rounded-xl overflow-hidden border border-[#D4AF37]/60 shadow-2xl shrink-0">
               <img 
-                src="/logo-emblem.jpg" 
-                alt="Mukund Woodline Emblem" 
-                className="w-full h-full object-contain rounded-lg"
+                src="/logo-badge.jpg" 
+                alt="Mukund Woodline" 
+                className="h-full w-auto object-contain rounded-xl"
               />
             </div>
             <div>
@@ -128,11 +128,11 @@ export default function AdminLoginPage() {
           {/* Logo & Headline */}
           <div>
             <div className="flex items-center gap-3 mb-6 lg:hidden">
-              <div className="w-11 h-11 rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/60 shadow-md shrink-0 flex items-center justify-center">
+              <div className="h-12 w-auto rounded-lg overflow-hidden border border-[#D4AF37]/60 shadow-md shrink-0">
                 <img 
-                  src="/logo-emblem.jpg" 
-                  alt="Mukund Woodline Emblem" 
-                  className="w-full h-full object-contain rounded-lg"
+                  src="/logo-badge.jpg" 
+                  alt="Mukund Woodline" 
+                  className="h-full w-auto object-contain rounded-lg"
                 />
               </div>
               <div>
