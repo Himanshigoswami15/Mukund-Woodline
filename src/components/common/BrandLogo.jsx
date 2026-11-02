@@ -14,25 +14,39 @@ export default function BrandLogo({
   asLink = true,
   className = ''
 }) {
+  // Select appropriate graphic based on variant and layout mode
+  const emblemImg = variant === 'dark' 
+    ? '/logo-emblem-dark.png' 
+    : '/logo-emblem-transparent.png';
+
+  const badgeImg = variant === 'dark'
+    ? '/logo-badge-dark.png'
+    : '/logo-badge-transparent.png';
+
   const sizeMap = {
-    xs: { img: 'w-7 h-7', title: 'text-sm', subtitle: 'text-[8px] tracking-[0.16em]' },
-    sm: { img: 'w-8 h-8', title: 'text-base', subtitle: 'text-[8.5px] tracking-[0.18em]' },
-    md: { img: 'w-10 h-10', title: 'text-xl sm:text-2xl', subtitle: 'text-[9.5px] tracking-[0.22em]' },
-    lg: { img: 'w-12 h-12', title: 'text-2xl sm:text-3xl', subtitle: 'text-[10.5px] tracking-[0.24em]' },
-    xl: { img: 'w-16 h-16', title: 'text-3xl sm:text-4xl', subtitle: 'text-[11.5px] tracking-[0.26em]' }
+    xs: { emblem: 'w-8 h-8', title: 'text-base', subtitle: 'text-[8.5px] tracking-[0.18em]' },
+    sm: { emblem: 'w-10 h-10', title: 'text-lg sm:text-xl', subtitle: 'text-[9px] tracking-[0.20em]' },
+    md: { emblem: 'w-12 h-12', title: 'text-xl sm:text-2xl', subtitle: 'text-[10px] tracking-[0.24em]' },
+    lg: { emblem: 'w-16 h-16', title: 'text-2xl sm:text-3xl', subtitle: 'text-[11px] tracking-[0.26em]' },
+    xl: { emblem: 'w-20 h-20', title: 'text-3xl sm:text-4xl', subtitle: 'text-[12px] tracking-[0.28em]' }
   };
 
   const currentSize = sizeMap[size] || sizeMap.md;
 
   const titleColor = variant === 'dark' ? 'text-white' : 'text-[#3B2213]';
-  const subtitleColor = variant === 'dark' ? 'text-[#E9DDCD]' : 'text-[#8C5835]';
+  const titleWoodlineColor = variant === 'dark' 
+    ? 'text-[#E5B26E] group-hover:text-[#F3CA8A]' 
+    : 'text-[#C67D3B] group-hover:text-[#A85E22]';
 
+  const subtitleColor = variant === 'dark' ? 'text-[#E9DDCD]/90' : 'text-[#8C5835]';
+
+  // Highlighted metallic emblem presentation with luxury gold/copper border
   const emblemNode = (
-    <div className={`relative shrink-0 rounded-full overflow-hidden p-0.5 bg-gradient-to-br from-[#8C5835] via-[#D4AF37]/40 to-[#23140A] shadow-md shadow-black/10 group-hover:scale-105 transition-transform duration-300 ${currentSize.img}`}>
+    <div className={`relative shrink-0 flex items-center justify-center rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/70 shadow-md shadow-[#3B2213]/25 group-hover:border-[#D4AF37] group-hover:shadow-[0_4px_16px_rgba(212,175,55,0.3)] transition-all duration-300 ${currentSize.emblem}`}>
       <img
-        src="/logo-circle.png"
+        src="/logo-emblem.jpg"
         alt="Mukund Woodline Emblem"
-        className="w-full h-full object-cover rounded-full"
+        className="w-full h-full object-contain rounded-lg"
         loading="eager"
       />
     </div>
@@ -40,11 +54,12 @@ export default function BrandLogo({
 
   const textNode = !showEmblemOnly && (
     <div className="flex flex-col min-w-0">
-      <span className={`font-brand font-medium tracking-[0.02em] leading-none transition-colors ${titleColor} ${currentSize.title}`}>
-        Mukund Woodline
+      <span className={`font-brand font-bold tracking-[0.02em] leading-none transition-colors ${titleColor} ${currentSize.title}`}>
+        Mukund <span className={`${titleWoodlineColor} transition-colors duration-200`}>Woodline</span>
       </span>
       {showTagline && (
-        <span className={`uppercase font-medium mt-1 tracking-[0.24em] text-[9px] truncate ${subtitleColor}`}>
+        <span className={`uppercase font-semibold mt-1 tracking-[0.24em] truncate flex items-center gap-1.5 ${subtitleColor} ${currentSize.subtitle}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
           {taglineText}
         </span>
       )}
@@ -52,7 +67,7 @@ export default function BrandLogo({
   );
 
   const content = (
-    <div className={`flex items-center gap-2.5 group ${className}`}>
+    <div className={`flex items-center gap-3 group ${className}`}>
       {emblemNode}
       {textNode}
     </div>

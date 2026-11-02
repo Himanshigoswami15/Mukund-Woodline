@@ -66,16 +66,16 @@ export default function AdminLoginPage() {
         <div className="relative z-10 p-12 lg:p-16 flex flex-col justify-between text-[#F8F6F2]">
           {/* Brand header */}
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-full p-0.5 bg-gradient-to-br from-[#D4AF37] to-[#8C5835] shadow-xl overflow-hidden shrink-0">
+            <div className="w-14 h-14 rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/60 shadow-xl shrink-0 flex items-center justify-center">
               <img 
-                src="/logo-circle.png" 
+                src="/logo-emblem.jpg" 
                 alt="Mukund Woodline Emblem" 
-                className="w-full h-full object-cover rounded-full"
+                className="w-full h-full object-contain rounded-lg"
               />
             </div>
             <div>
               <span className="font-serif text-2xl lg:text-3xl font-bold tracking-tight text-white block">
-                Mukund Woodline
+                Mukund <span className="text-[#E5B26E]">Woodline</span>
               </span>
               <span className="text-[10px] uppercase tracking-[0.25em] text-[#E9DDCD] font-semibold">
                 STRENGTH IN EVERY GRAIN • ADMIN PORTAL
@@ -128,16 +128,16 @@ export default function AdminLoginPage() {
           {/* Logo & Headline */}
           <div>
             <div className="flex items-center gap-3 mb-6 lg:hidden">
-              <div className="w-11 h-11 rounded-full p-0.5 bg-gradient-to-br from-[#D4AF37] to-[#8C5835] shadow-md overflow-hidden shrink-0">
+              <div className="w-11 h-11 rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/60 shadow-md shrink-0 flex items-center justify-center">
                 <img 
-                  src="/logo-circle.png" 
+                  src="/logo-emblem.jpg" 
                   alt="Mukund Woodline Emblem" 
-                  className="w-full h-full object-cover rounded-full"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
               <div>
                 <span className="font-serif text-xl font-bold text-[#5B3826] block leading-none">
-                  Mukund Woodline
+                  Mukund <span className="text-[#C67D3B]">Woodline</span>
                 </span>
                 <span className="text-[9px] uppercase tracking-wider text-[#77736D]">
                   Admin Management

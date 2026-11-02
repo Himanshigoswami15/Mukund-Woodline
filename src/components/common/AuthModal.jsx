@@ -63,11 +63,11 @@ export default function AuthModal() {
             <X className="w-5 h-5" />
           </button>
           
-          <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-br from-[#D4AF37] to-[#8C5835] shadow-md mb-2 overflow-hidden">
+          <div className="w-12 h-12 rounded-xl p-1 bg-gradient-to-br from-[#3B2213] via-[#23140A] to-[#120A05] border border-[#D4AF37]/60 shadow-lg mb-3 flex items-center justify-center">
             <img 
-              src="/logo-circle.png" 
+              src="/logo-emblem.jpg" 
               alt="Mukund Woodline Emblem" 
-              className="w-full h-full object-cover rounded-full"
+              className="w-full h-full object-contain rounded-lg"
             />
           </div>
           <h3 className="font-serif text-xl font-bold">
