@@ -85,7 +85,7 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
-            <BrandLogo size="lg" variant="dark" taglineText="STRENGTH IN EVERY GRAIN" />
+            <BrandLogo size="lg" variant="dark" align="start" taglineText="STRENGTH IN EVERY GRAIN" />
 
             <p className="text-xs text-[#E9DDCD]/90 italic font-serif leading-relaxed border-l-2 border-[#D4AF37]/50 pl-3">
               “Wood that lives with you. Quality that lasts for generations.”
