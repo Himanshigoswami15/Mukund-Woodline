@@ -62,11 +62,12 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen
       {/* 1. Header with Logo & Brand */}
       <div className="p-4 sm:p-5 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="h-10 w-auto rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-md shrink-0">
+          <div className="h-10 w-auto shrink-0">
             <img 
-              src="/logo-badge.jpg" 
+              src="/logo-monogram.png" 
               alt="Mukund Woodline" 
-              className="h-full w-auto object-contain rounded-lg"
+              className="h-full w-auto object-contain"
+              style={{ filter: 'brightness(1.35) contrast(1.1)' }}
             />
           </div>
           {!isCollapsed && (
